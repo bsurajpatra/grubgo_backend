@@ -1,6 +1,10 @@
 package klu.controller;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -12,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import klu.model.User;
+import klu.repository.UserRepository;
 import klu.service.UserService;
 import klu.util.JwtUtil;
 
@@ -24,24 +29,51 @@ public class AuthController {
 
     @Autowired
     private JwtUtil jwtUtil;
+    
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
     private AuthenticationManager authenticationManager;
 
-    @PostMapping("/signup")
-    public ResponseEntity<String> signUp(@RequestBody User user) {
-        return ResponseEntity.ok(userService.registerUser(user));
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody User user) {
+        String result = userService.registerUser(user);
+        String[] parts = result.split("::", 2);
+        
+        Map<String, Object> responseMap = new HashMap<>();
+        if (parts[0].equals("200")) {
+            responseMap.put("message", parts[1]);
+            responseMap.put("email", user.getEmail());
+            return ResponseEntity.ok(responseMap);
+        } else {
+            responseMap.put("error", parts[1]);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseMap);
+        }
     }
 
-    @PostMapping("/signin")
-    public ResponseEntity<String> signIn(@RequestBody User user) {
-        return ResponseEntity.ok(userService.signIn(user.getEmail(), user.getPassword()));
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, Object>> login(@RequestBody User user) {
+        String response = userService.signIn(user.getEmail(), user.getPassword());
+        String[] parts = response.split("::", 2);
+        
+        Map<String, Object> responseMap = new HashMap<>();
+        if (parts[0].equals("200")) {
+            responseMap.put("token", parts[1]);
+            responseMap.put("role", userRepository.findByEmail(user.getEmail()).getRole());
+            responseMap.put("email", user.getEmail());
+            return ResponseEntity.ok(responseMap);
+        } else {
+            responseMap.put("error", parts[1]);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseMap);
+        }
     }
 
-    @PostMapping("/forgotpassword")
-    public ResponseEntity<String> forgotPassword(@RequestBody User user) {
-        return ResponseEntity.ok(userService.getPassword(user.getEmail()));
-    }
+    // @PostMapping("/forgotpassword")
+    // public ResponseEntity<String> forgotPassword(@RequestBody User user) {
+    //     // Changed to use the new forgotPassword method
+    //     return ResponseEntity.ok(userService.forgotPassword(user.getEmail()));
+    // }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/admin")

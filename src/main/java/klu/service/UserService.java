@@ -1,7 +1,6 @@
 package klu.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import klu.model.User;
@@ -24,14 +23,12 @@ public class UserService {
     @Autowired
     private JwtUtil jwtUtil;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
     public String registerUser(User user) {
         if (userRepository.findByEmail(user.getEmail()) != null) {
             return "401::User E-mail already exists";
         }
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        
+        // Store password as plaintext for now - TEMPORARY SOLUTION
         userRepository.save(user);
         return "200::User Registered Successfully!";
     }
@@ -39,17 +36,27 @@ public class UserService {
     public String signIn(String email, String password) {
         User user = userRepository.findByEmail(email);
         if (user == null) {
+            System.out.println("User not found: " + email);
             return "404::Invalid Credentials";
         }
-        if (!passwordEncoder.matches(password, user.getPassword())) {
-            return "404::Invalid Credentials";
+        
+        System.out.println("Stored password: " + user.getPassword());
+        System.out.println("Entered password: " + password);
+        
+        // Plain text comparison for testing
+        if (password.equals(user.getPassword())) {
+            String token = jwtUtil.generateToken(email, user.getRole());
+            System.out.println("Generated token: " + token);
+            return "200::" + token;
         }
-        return "200::" + jwtUtil.generateToken(email);
+        
+        return "404::Invalid Credentials";
     }
 
     public String getPassword(String email) {
         User user = userRepository.findByEmail(email);
         if (user != null) {
+            // Since we're using plaintext passwords temporarily, we can send it directly
             String message = "Dear " + user.getName() + "\n\nYour password is " + user.getPassword();
             return emailManager.sendEmail(email, "Password Recovery", message);
         }
