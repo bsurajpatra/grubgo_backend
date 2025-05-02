@@ -17,15 +17,25 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 
 @Component
 public class JwtUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
 
-    // Your 32-bit (or longer) secret key for JWT signing
-    @Value("${jwt.secret:5E6FA3D7C8B1A9F0E2D4C6B8A0F2E4D6}")
+    @Value("${jwt.secret}")
     private String secret;
+    
+    @PostConstruct
+    public void init() {
+        logger.info("JWT secret loaded with length: {}", secret != null ? secret.length() : 0);
+        
+        if (secret == null || secret.isBlank()) {
+            logger.error("JWT secret is missing or empty");
+            throw new IllegalStateException("JWT secret must be configured");
+        }
+    }
 
     private Key getSigningKey() {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
