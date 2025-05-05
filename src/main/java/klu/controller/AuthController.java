@@ -69,11 +69,6 @@ public class AuthController {
         }
     }
 
-    // @PostMapping("/forgotpassword")
-    // public ResponseEntity<String> forgotPassword(@RequestBody User user) {
-    //     // Changed to use the new forgotPassword method
-    //     return ResponseEntity.ok(userService.forgotPassword(user.getEmail()));
-    // }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/admin")

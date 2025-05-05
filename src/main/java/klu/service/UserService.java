@@ -15,7 +15,7 @@ public class UserService {
     private UserRepository userRepository;
 
     @Autowired
-    private RoleRepository roleRepository;
+    private RoleRepository roleRepository; 
 
     @Autowired
     private EmailManager emailManager;
@@ -28,7 +28,6 @@ public class UserService {
             return "401::User E-mail already exists";
         }
         
-        // Store password as plaintext for now - TEMPORARY SOLUTION
         userRepository.save(user);
         return "200::User Registered Successfully!";
     }

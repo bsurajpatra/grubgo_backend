@@ -50,7 +50,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
                 .requestMatchers("/api/dashboard/menu").permitAll()
-                .requestMatchers("/api/password/forgot").permitAll()
+                .requestMatchers("/api/auth/**", "/api/password/forgot", "/api/password/reset").permitAll()
                 .requestMatchers("/api/**").authenticated()
                 .anyRequest().authenticated()
             )
