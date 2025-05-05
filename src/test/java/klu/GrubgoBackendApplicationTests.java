@@ -5,12 +5,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
-public class GrubgoBackendApplication {
+@SpringBootTest
+public class GrubgoBackendApplicationTests {
 
-    public static void main(String[] args) {
-        SpringApplication.run(GrubgoBackendApplication.class, args);
-    }
 
     @Test
     void contextLoads() {

@@ -9,7 +9,6 @@ import io.github.cdimascio.dotenv.Dotenv;
 public class GrubgoBackendApplication {
 
     public static void main(String[] args) {
-        // Load environment variables before Spring starts
         try {
             System.out.println("Loading environment variables from .env file...");
             Dotenv dotenv = Dotenv.configure().load();
