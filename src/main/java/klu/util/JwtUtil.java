@@ -63,11 +63,11 @@ public class JwtUtil {
 
     private Claims extractAllClaims(String token) {
         try {
-            return Jwts.parserBuilder()
+        return Jwts.parserBuilder()
                     .setSigningKey(signingKey)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
         } catch (Exception e) {
             logger.error("Failed to extract claims from token: {}", e.getMessage());
             throw e;
@@ -87,12 +87,12 @@ public class JwtUtil {
     private String createToken(Map<String, Object> claims, String subject) {
         try {
             String token = Jwts.builder()
-                    .setClaims(claims)
-                    .setSubject(subject)
-                    .setIssuedAt(new Date(System.currentTimeMillis()))
-                    .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours token validity
+                .setClaims(claims)
+                .setSubject(subject)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours token validity
                     .signWith(signingKey, SignatureAlgorithm.HS256)
-                    .compact();
+                .compact();
             logger.debug("Generated new token for user: {}", subject);
             return token;
         } catch (Exception e) {
@@ -114,12 +114,12 @@ public class JwtUtil {
             boolean isValid = username.equals(userDetails.getUsername()) && !isTokenExpired(token);
             
             if (!isValid) {
-                if (!username.equals(userDetails.getUsername())) {
+            if (!username.equals(userDetails.getUsername())) {
                     logger.warn("Token username '{}' doesn't match UserDetails username '{}'", 
                             username, userDetails.getUsername());
-                }
-                if (isTokenExpired(token)) {
-                    logger.warn("Token is expired");
+            }
+            if (isTokenExpired(token)) {
+                logger.warn("Token is expired");
                 }
             }
             
