@@ -28,11 +28,11 @@ public class CustomerController {
     @GetMapping("/order-history")
     public ResponseEntity<?> getOrderHistory() {
         try {
-            // For testing, let's use getAllOrderHistory instead of filtering by user
+          
             List<Map<String, Object>> orderHistory = orderService.getAllOrderHistory();
             
             if (orderHistory == null || orderHistory.isEmpty()) {
-                // Return mock data if no real data is available
+               
                 Map<String, Object> mockOrder = new HashMap<>();
                 mockOrder.put("order_id", 1);
                 mockOrder.put("customer_name", "Test User");
@@ -57,7 +57,7 @@ public class CustomerController {
         }
     }
     
-    // Optional: Add an endpoint that uses authentication to get the user ID
+    
     @GetMapping("/authenticated-order-history")
     public ResponseEntity<?> getAuthenticatedOrderHistory(Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
