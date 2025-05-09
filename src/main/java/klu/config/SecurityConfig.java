@@ -49,10 +49,11 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                .requestMatchers("/api/user/profile").permitAll()
                 .requestMatchers("/api/dashboard/menu").permitAll()
                 .requestMatchers("/api/auth/**", "/api/password/forgot", "/api/password/reset").permitAll()
                 .requestMatchers("/api/restaurants/**").permitAll()
-                .requestMatchers("/api/**").authenticated()
+                .requestMatchers("/api/**").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
