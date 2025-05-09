@@ -50,7 +50,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/customer/order-history").permitAll()
                 .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
-                .requestMatchers("/api/user/profile").permitAll()
+                .requestMatchers("/api/user/login", "/api/user/register").permitAll()
                 .requestMatchers("/api/dashboard/menu").permitAll()
                 .requestMatchers("/api/auth/**", "/api/password/forgot", "/api/password/reset").permitAll()
                 .requestMatchers("/api/restaurants/**").permitAll()

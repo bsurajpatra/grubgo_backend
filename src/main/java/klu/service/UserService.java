@@ -55,10 +55,37 @@ public class UserService {
     public String getPassword(String email) {
         User user = userRepository.findByEmail(email);
         if (user != null) {
-            // Since we're using plaintext passwords temporarily, we can send it directly
             String message = "Dear " + user.getName() + "\n\nYour password is " + user.getPassword();
             return emailManager.sendEmail(email, "Password Recovery", message);
         }
         return "404::User not found";
+    }
+    
+    public boolean changePassword(String email, String currentPassword, String newPassword) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            return false;
+        }
+        
+        // Verify current password
+        if (!currentPassword.equals(user.getPassword())) {
+            return false;
+        }
+        
+        // Update password
+        user.setPassword(newPassword);
+        userRepository.save(user);
+        
+        return true;
+    }
+    
+    public boolean deleteUserAccount(String email) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) {
+            return false;
+        }
+        
+        userRepository.delete(user);
+        return true;
     }
 }

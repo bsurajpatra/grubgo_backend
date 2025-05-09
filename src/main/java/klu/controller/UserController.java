@@ -8,11 +8,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.GetMapping;
 
 import klu.model.User;
 import klu.repository.UserRepository;
@@ -101,5 +103,84 @@ public class UserController {
         response.put("role", user.getRole());
         
         return ResponseEntity.ok(response);
+    }
+    
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateUserProfile(@RequestBody User updatedUser, Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "User not authenticated"));
+        }
+        
+        String email = authentication.getName();
+        User existingUser = userRepository.findByEmail(email);
+        
+        if (existingUser == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", "User not found"));
+        }
+        
+        // Update only allowed fields (not email or password)
+        existingUser.setName(updatedUser.getName());
+        existingUser.setPhoneNumber(updatedUser.getPhoneNumber());
+        existingUser.setAddress(updatedUser.getAddress());
+        
+        userRepository.save(existingUser);
+        
+        return ResponseEntity.ok(Map.of("message", "Profile updated successfully"));
+    }
+    
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> passwordData, 
+                                          Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "User not authenticated"));
+        }
+        
+        String email = authentication.getName();
+        String currentPassword = passwordData.get("currentPassword");
+        String newPassword = passwordData.get("newPassword");
+        
+        if (currentPassword == null || newPassword == null) {
+            return ResponseEntity.badRequest()
+                .body(Map.of("error", "Current password and new password are required"));
+        }
+        
+        try {
+            boolean success = userService.changePassword(email, currentPassword, newPassword);
+            if (success) {
+                return ResponseEntity.ok(Map.of("message", "Password changed successfully"));
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("error", "Current password is incorrect"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to change password: " + e.getMessage()));
+        }
+    }
+    
+    @DeleteMapping("/account")
+    public ResponseEntity<?> deleteAccount(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", "User not authenticated"));
+        }
+        
+        String email = authentication.getName();
+        
+        try {
+            boolean success = userService.deleteUserAccount(email);
+            if (success) {
+                return ResponseEntity.ok(Map.of("message", "Account deleted successfully"));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "User not found"));
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Failed to delete account: " + e.getMessage()));
+        }
     }
 }
