@@ -27,14 +27,20 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secret;
     
+    private Key signingKey;
+    
     @PostConstruct
     public void init() {
-        logger.info("JWT secret loaded with length: {}", secret != null ? secret.length() : 0);
-        
+        logger.info("Initializing JWT utility");
         if (secret == null || secret.isBlank()) {
             logger.error("JWT secret is missing or empty");
             throw new IllegalStateException("JWT secret must be configured");
         }
+        logger.info("JWT secret loaded successfully with length: {}", secret.length());
+        
+        // Initialize signing key once
+        signingKey = getSigningKey();
+        logger.info("JWT signing key initialized successfully");
     }
 
     private Key getSigningKey() {
@@ -56,11 +62,16 @@ public class JwtUtil {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(signingKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (Exception e) {
+            logger.error("Failed to extract claims from token: {}", e.getMessage());
+            throw e;
+        }
     }
 
     private Boolean isTokenExpired(String token) {
@@ -74,13 +85,20 @@ public class JwtUtil {
     }
 
     private String createToken(Map<String, Object> claims, String subject) {
-        return Jwts.builder()
-                .setClaims(claims)
-                .setSubject(subject)
-                .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours token validity
-                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
-                .compact();
+        try {
+            String token = Jwts.builder()
+                    .setClaims(claims)
+                    .setSubject(subject)
+                    .setIssuedAt(new Date(System.currentTimeMillis()))
+                    .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours token validity
+                    .signWith(signingKey, SignatureAlgorithm.HS256)
+                    .compact();
+            logger.debug("Generated new token for user: {}", subject);
+            return token;
+        } catch (Exception e) {
+            logger.error("Failed to create token: {}", e.getMessage());
+            throw e;
+        }
     }
 
     public String extractRole(String token) {
@@ -95,15 +113,18 @@ public class JwtUtil {
             
             boolean isValid = username.equals(userDetails.getUsername()) && !isTokenExpired(token);
             
-            if (!username.equals(userDetails.getUsername())) {
-                logger.warn("Token username doesn't match UserDetails username");
+            if (!isValid) {
+                if (!username.equals(userDetails.getUsername())) {
+                    logger.warn("Token username '{}' doesn't match UserDetails username '{}'", 
+                            username, userDetails.getUsername());
+                }
+                if (isTokenExpired(token)) {
+                    logger.warn("Token is expired");
+                }
             }
             
-            if (isTokenExpired(token)) {
-                logger.warn("Token is expired");
-            }
-            
-            logger.info("Token validated for user: {}, role: {}, valid: {}", username, role, isValid);
+            logger.debug("Token validated for user: {}, role: {}, valid: {}", 
+                    username, role, isValid);
             
             return isValid;
         } catch (Exception e) {
