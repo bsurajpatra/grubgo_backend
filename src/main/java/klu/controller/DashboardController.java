@@ -7,9 +7,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,23 +26,19 @@ public class DashboardController {
     private UserRepository userRepository;
     
     @GetMapping("/menu")
-    public ResponseEntity<?> getDashboardMenu() {
+    public ResponseEntity<?> getDefaultMenu() {
+        Map<String, Object> response = new HashMap<>();
+        response.put("menuItems", new String[] {"Login", "Register"});
+        return ResponseEntity.ok(response);
+    }
+    
+    @PostMapping("/menu")
+    public ResponseEntity<?> getDashboardMenu(@RequestBody Map<String, String> request) {
         Map<String, Object> response = new HashMap<>();
         
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null) {
-            logger.info("Auth principal: {}", auth.getPrincipal());
-            logger.info("Auth authorities: {}", auth.getAuthorities());
-            logger.info("Auth name: {}", auth.getName());
-        } else {
-            logger.warn("No authentication found in SecurityContext");
-        }
-        
-        String email = null;
-        if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
-            email = auth.getName();
-        } else {
-            logger.warn("User is not authenticated or is anonymous");
+        String email = request.get("email");
+        if (email == null || email.isEmpty()) {
+            logger.warn("No email provided in request");
             response.put("menuItems", new String[] {"Login", "Register"});
             return ResponseEntity.ok(response);
         }
@@ -59,6 +55,7 @@ public class DashboardController {
         response.put("userId", user.getId());
         response.put("name", user.getName());
         response.put("email", user.getEmail());
+        response.put("role", user.getRole());
         
         switch (user.getRole()) {
             case "CUSTOMER":

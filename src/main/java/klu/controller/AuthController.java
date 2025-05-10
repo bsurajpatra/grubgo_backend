@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import klu.model.User;
 import klu.repository.UserRepository;
 import klu.service.UserService;
-import klu.util.JwtUtil;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -26,9 +25,6 @@ import klu.util.JwtUtil;
 public class AuthController {
     @Autowired
     private UserService userService;
-
-    @Autowired
-    private JwtUtil jwtUtil;
     
     @Autowired
     private UserRepository userRepository;
@@ -59,16 +55,38 @@ public class AuthController {
         
         Map<String, Object> responseMap = new HashMap<>();
         if (parts[0].equals("200")) {
-            responseMap.put("token", parts[1]);
-            responseMap.put("role", userRepository.findByEmail(user.getEmail()).getRole());
+            User authenticatedUser = userRepository.findByEmail(user.getEmail());
+            responseMap.put("success", true);
+            responseMap.put("role", authenticatedUser.getRole());
             responseMap.put("email", user.getEmail());
+            responseMap.put("name", authenticatedUser.getName());
+            responseMap.put("userId", authenticatedUser.getId());
             return ResponseEntity.ok(responseMap);
         } else {
+            responseMap.put("success", false);
             responseMap.put("error", parts[1]);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseMap);
         }
     }
 
+    @PostMapping("/validate")
+    public ResponseEntity<Map<String, Object>> validateUser(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        User user = userRepository.findByEmail(email);
+        
+        Map<String, Object> responseMap = new HashMap<>();
+        if (user != null) {
+            responseMap.put("valid", true);
+            responseMap.put("role", user.getRole());
+            responseMap.put("name", user.getName());
+            responseMap.put("userId", user.getId());
+            return ResponseEntity.ok(responseMap);
+        } else {
+            responseMap.put("valid", false);
+            responseMap.put("message", "User not found");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseMap);
+        }
+    }
 
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @GetMapping("/admin")

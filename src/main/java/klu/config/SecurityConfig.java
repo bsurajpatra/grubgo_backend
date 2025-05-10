@@ -17,14 +17,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import jakarta.servlet.http.HttpServletResponse;
 import klu.security.CustomUserDetailsService;
-import klu.security.JwtAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -36,9 +34,6 @@ public class SecurityConfig {
     @Autowired
     private CustomUserDetailsService userDetailsService;
     
-    @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
-    
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         logger.info("Configuring security filter chain");
@@ -47,20 +42,11 @@ public class SecurityConfig {
             .cors(corsConfig -> corsConfig.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/customer/order-history").permitAll()
-                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
-                .requestMatchers("/api/user/login", "/api/user/register").permitAll()
-                .requestMatchers("/api/dashboard/menu").permitAll()
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/password/**").permitAll()
-                .requestMatchers("/api/restaurants/**").permitAll()
-                .requestMatchers("/api/orders/**").permitAll()
-                .requestMatchers("/api/admin/**").permitAll()
-                .anyRequest().authenticated()
+                // Permit all requests to all endpoints
+                .anyRequest().permitAll()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .exceptionHandling(ex -> 
                 ex.authenticationEntryPoint((request, response, authException) -> {
                     logger.error("Unauthorized error: {}", authException.getMessage());
