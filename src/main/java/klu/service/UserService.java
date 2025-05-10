@@ -22,6 +22,9 @@ public class UserService {
 
     @Autowired
     private JwtUtil jwtUtil;
+    
+    @Autowired
+    private WelcomeEmailService welcomeEmailService;
 
     public String registerUser(User user) {
         if (userRepository.findByEmail(user.getEmail()) != null) {
@@ -29,6 +32,10 @@ public class UserService {
         }
         
         userRepository.save(user);
+        
+        // Send welcome email using the dedicated service
+        welcomeEmailService.sendWelcomeEmail(user);
+        
         return "200::User Registered Successfully!";
     }
 
