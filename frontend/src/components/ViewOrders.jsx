@@ -51,6 +51,46 @@ const ViewOrders = () => {
         // Continue with the regular request even if the test fails
       }
       
+      // Try the direct email-to-restaurant approach first (most accurate)
+      try {
+        console.log('Trying direct email-to-restaurant approach...');
+        const emailBasedResponse = await axios.get(API_ENDPOINTS.RESTAURANT_ORDERS_BY_EMAIL, {
+          params: { email }
+        });
+        
+        console.log('Direct email-to-restaurant response:', emailBasedResponse.data);
+        
+        if (emailBasedResponse.data && emailBasedResponse.data.orders) {
+          setOrders(emailBasedResponse.data.orders);
+          setError(null);
+          setLoading(false);
+          return;
+        }
+      } catch (emailErr) {
+        console.error('Direct email-to-restaurant approach failed:', emailErr);
+        // Continue with the next approach if this fails
+      }
+      
+      // Try the name-based approach as fallback
+      try {
+        console.log('Trying name-based approach as fallback...');
+        const nameBasedResponse = await axios.get(API_ENDPOINTS.RESTAURANT_ORDERS_BY_NAME, {
+          params: { email }
+        });
+        
+        console.log('Name-based response received:', nameBasedResponse.data);
+        
+        if (nameBasedResponse.data && nameBasedResponse.data.orders) {
+          setOrders(nameBasedResponse.data.orders);
+          setError(null);
+          setLoading(false);
+          return;
+        }
+      } catch (nameErr) {
+        console.error('Name-based approach failed:', nameErr);
+        // Continue with the original approach if the name-based approach fails
+      }
+      
       // Then call the debug endpoint to check if restaurant lookup works
       try {
         const debugResponse = await axios.get(`${API_ENDPOINTS.RESTAURANTS}/debug`, {
@@ -74,11 +114,12 @@ const ViewOrders = () => {
         // Continue with the regular request even if debug fails
       }
       
+      // Fall back to the original approach (email → owner ID → restaurant → orders)
       const response = await axios.get(API_ENDPOINTS.RESTAURANT_ORDERS, {
         params: { email }
       });
 
-      console.log('Response received:', response.data);
+      console.log('Original approach response received:', response.data);
 
       if (response.data && response.data.orders) {
         setOrders(response.data.orders);

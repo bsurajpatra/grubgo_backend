@@ -11,6 +11,8 @@ export const API_ENDPOINTS = {
   RESTAURANTS: `${API_BASE_URL}/restaurants`,
   RESTAURANT_MENU: (id) => `${API_BASE_URL}/restaurants/${id}/menu`,
   RESTAURANT_ORDERS: `${API_BASE_URL}/restaurants/orders`,
+  RESTAURANT_ORDERS_BY_NAME: `${API_BASE_URL}/restaurants/orders-by-name`,
+  RESTAURANT_ORDERS_BY_EMAIL: `${API_BASE_URL}/restaurants/orders-by-email`,
   
   // Order endpoints
   ORDERS: `${API_BASE_URL}/orders`,

@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -409,6 +410,177 @@ public class RestaurantController {
             restaurant.setOpeningHours(openingHours != null ? openingHours : "09:00-22:00");
             restaurant.setOwnerId(user.getId());
             restaurant.setRating(rating != null ? rating : 4.5);
+            
+            Restaurant savedRestaurant = restaurantRepository.save(restaurant);
+            logger.info("Created restaurant: {} (ID: {})", savedRestaurant.getName(), savedRestaurant.getId());
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Restaurant created successfully",
+                "restaurant", savedRestaurant
+            ));
+        } catch (Exception e) {
+            logger.error("Error creating restaurant", e);
+            return ResponseEntity.internalServerError().body(Map.of(
+                "success", false,
+                "error", e.getMessage()
+            ));
+        }
+    }
+
+    @GetMapping("/orders-by-name")
+    public ResponseEntity<?> getRestaurantOrdersByName(@RequestParam(required = true) String email) {
+        logger.info("Received request for restaurant orders with email: {}", email);
+        
+        try {
+            if (email == null || email.isEmpty()) {
+                logger.error("Email parameter is null or empty");
+                return ResponseEntity.badRequest().body(Map.of("error", "Email parameter is required"));
+            }
+            
+            // Step 1: Find user by email
+            User user = userRepository.findByEmail(email);
+            if (user == null) {
+                logger.error("User not found for email: {}", email);
+                return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
+            }
+            logger.info("Found user: {} (ID: {})", user.getName(), user.getId());
+            
+            // Step 2: Get restaurant name from user's name (assuming restaurant name is related to user name)
+            String restaurantName = user.getName();
+            logger.info("Using restaurant name: {}", restaurantName);
+            
+            // Step 3: Find restaurant by name using repository method
+            List<Restaurant> restaurants = restaurantRepository.findByNameIgnoreCase(restaurantName);
+                
+            if (restaurants.isEmpty()) {
+                // Try with partial name match if exact match fails
+                restaurants = restaurantRepository.findByNameContainingIgnoreCase(restaurantName);
+                
+                if (restaurants.isEmpty()) {
+                    logger.error("No restaurant found with name: {}", restaurantName);
+                    return ResponseEntity.badRequest().body(Map.of("error", "No restaurant found with this name"));
+                }
+            }
+            
+            // Use the first matching restaurant
+            Restaurant restaurant = restaurants.get(0);
+            logger.info("Found restaurant: {} (ID: {})", restaurant.getName(), restaurant.getId());
+            
+            // Step 4: Get orders for this restaurant with detailed information
+            List<Map<String, Object>> orders = orderRepository.getOrdersByRestaurantId(restaurant.getId());
+            logger.info("Found {} orders for restaurant", orders.size());
+            
+            // For each order, fetch the order items
+            for (Map<String, Object> order : orders) {
+                Long orderId = ((Number) order.get("order_id")).longValue();
+                List<Map<String, Object>> items = orderService.getOrderItemDetails(orderId);
+                order.put("items", items);
+            }
+            
+            return ResponseEntity.ok(Map.of("orders", orders));
+        } catch (Exception e) {
+            logger.error("Error processing restaurant orders request", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to fetch orders", "message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/orders-by-email")
+    public ResponseEntity<?> getRestaurantOrdersByEmailDirect(@RequestParam(required = true) String email) {
+        logger.info("Received request for restaurant orders with email: {}", email);
+        
+        try {
+            if (email == null || email.isEmpty()) {
+                logger.error("Email parameter is null or empty");
+                return ResponseEntity.badRequest().body(Map.of("error", "Email parameter is required"));
+            }
+            
+            // Step 1: Find user by email
+            User user = userRepository.findByEmail(email);
+            if (user == null) {
+                logger.error("User not found for email: {}", email);
+                return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
+            }
+            logger.info("Found user: {} (ID: {})", user.getName(), user.getId());
+            
+            // Step 2: Find restaurant directly by owner ID
+            Optional<Restaurant> restaurantOpt = restaurantRepository.findByOwnerId(user.getId());
+            if (restaurantOpt.isEmpty()) {
+                logger.error("No restaurant found with owner ID: {}", user.getId());
+                
+                // For debugging, check if there's a restaurant with a matching name
+                List<Restaurant> nameMatchRestaurants = restaurantRepository.findByNameIgnoreCase(user.getName());
+                if (!nameMatchRestaurants.isEmpty()) {
+                    logger.info("Found restaurant by name match, but owner ID doesn't match");
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "error", "Found restaurant with matching name but different owner ID",
+                        "suggestion", "Update restaurant owner_id to " + user.getId()
+                    ));
+                }
+                
+                return ResponseEntity.badRequest().body(Map.of("error", "No restaurant found for this owner"));
+            }
+            
+            Restaurant restaurant = restaurantOpt.get();
+            logger.info("Found restaurant: {} (ID: {}) with owner_id: {}", 
+                restaurant.getName(), restaurant.getId(), restaurant.getOwnerId());
+            
+            // Step 3: Get orders for this restaurant with detailed information
+            List<Map<String, Object>> orders = orderRepository.getOrdersByRestaurantId(restaurant.getId());
+            logger.info("Found {} orders for restaurant", orders.size());
+            
+            // For each order, fetch the order items
+            for (Map<String, Object> order : orders) {
+                Long orderId = ((Number) order.get("order_id")).longValue();
+                List<Map<String, Object>> items = orderService.getOrderItemDetails(orderId);
+                order.put("items", items);
+            }
+            
+            return ResponseEntity.ok(Map.of(
+                "orders", orders,
+                "restaurant", Map.of(
+                    "id", restaurant.getId(),
+                    "name", restaurant.getName(),
+                    "owner_id", restaurant.getOwnerId()
+                )
+            ));
+        } catch (Exception e) {
+            logger.error("Error processing restaurant orders request", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to fetch orders", "message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/create-if-not-exists")
+    public ResponseEntity<?> createRestaurantIfNotExists(@RequestParam String email) {
+        logger.info("Creating restaurant for user with email if it doesn't exist: {}", email);
+        
+        try {
+            // Find user by email
+            User user = userRepository.findByEmail(email);
+            if (user == null) {
+                logger.error("User not found for email: {}", email);
+                return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
+            }
+            
+            // Check if user already has a restaurant
+            Optional<Restaurant> existingRestaurant = restaurantRepository.findByOwnerId(user.getId());
+            if (existingRestaurant.isPresent()) {
+                logger.info("User already has a restaurant: {}", existingRestaurant.get().getName());
+                return ResponseEntity.ok(Map.of(
+                    "message", "User already has a restaurant",
+                    "restaurant", existingRestaurant.get()
+                ));
+            }
+            
+            // Create new restaurant using user's name
+            Restaurant restaurant = new Restaurant();
+            restaurant.setName(user.getName()); // Use user's name as restaurant name
+            restaurant.setAddress(user.getAddress() != null ? user.getAddress() : "Default Address");
+            restaurant.setPhone(user.getPhoneNumber() != null ? user.getPhoneNumber() : "555-0000");
+            restaurant.setCuisineType("Various");
+            restaurant.setOpeningHours("09:00-22:00");
+            restaurant.setOwnerId(user.getId());
+            restaurant.setRating(4.5);
             
             Restaurant savedRestaurant = restaurantRepository.save(restaurant);
             logger.info("Created restaurant: {} (ID: {})", savedRestaurant.getName(), savedRestaurant.getId());
