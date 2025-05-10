@@ -29,6 +29,22 @@ public class OrderController {
     @Autowired
     private UserRepository userRepository;
     
+    @GetMapping
+    public ResponseEntity<?> getOrderHistory() {
+        try {
+            // Get all order
+            List<Map<String, Object>> orderHistory = orderService.getAllOrderHistory();
+            
+            return ResponseEntity.ok(Map.of("orders", orderHistory));
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                "error", "Failed to retrieve order history", 
+                "message", e.getMessage()
+            ));
+        }
+    }
+    
     @PostMapping
     public ResponseEntity<?> placeOrder(@RequestBody Map<String, Object> orderRequest, Authentication authentication) {
         if (authentication == null || !authentication.isAuthenticated()) {
