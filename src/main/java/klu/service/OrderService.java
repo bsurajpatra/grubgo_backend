@@ -33,6 +33,9 @@ public class OrderService {
     
     @Autowired
     private MenuItemRepository menuItemRepository;
+    
+    @Autowired
+    private OrderEmailService orderEmailService;
 
     public List<Order> getOrdersByCustomerId(Long customerId) {
         return orderRepository.findByCustomerId(customerId);
@@ -81,6 +84,16 @@ public class OrderService {
             orderItemRepository.save(orderItem);
         }
         
+        // Get restaurant name for the email
+        Optional<Restaurant> restaurantOpt = restaurantRepository.findById(restaurantId);
+        String restaurantName = restaurantOpt.isPresent() ? restaurantOpt.get().getName() : "Unknown Restaurant";
+        
+        // Get order items with details for the email
+        List<Map<String, Object>> orderItemsWithDetails = orderItemRepository.getOrderItemsWithDetails(savedOrder.getId());
+        
+        // Send order confirmation email
+        orderEmailService.sendOrderConfirmationEmail(savedOrder, orderItemsWithDetails, restaurantName);
+        
         return savedOrder;
     }
     
@@ -119,8 +132,19 @@ public class OrderService {
         }
         
         Order order = orderOpt.get();
-        order.setStatus(newStatus);
-        return orderRepository.save(order);
+        
+        // Only send email if status is actually changing
+        if (order.getStatus() != newStatus) {
+            order.setStatus(newStatus);
+            Order updatedOrder = orderRepository.save(order);
+            
+            // Send status update email
+            orderEmailService.sendOrderStatusUpdateEmail(updatedOrder);
+            
+            return updatedOrder;
+        } else {
+            return order;
+        }
     }
 
     @Transactional
