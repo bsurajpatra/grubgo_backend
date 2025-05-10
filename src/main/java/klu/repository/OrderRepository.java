@@ -15,6 +15,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query(value = "SELECT o.id AS order_id, " +
                   "u.name AS customer_name, " +
                   "u.email AS customer_email, " +
+                  "r.name AS restaurant_name, " +
                   "o.total_amount, " +
                   "o.status, " +
                   "o.order_date, " +
@@ -22,12 +23,14 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
                   "o.delivery_address " +
                   "FROM orders o " +
                   "INNER JOIN users u ON o.customer_id = u.id " +
+                  "LEFT JOIN restaurants r ON o.restaurant_id = r.id " +
                   "ORDER BY o.order_date DESC", nativeQuery = true)
     List<Map<String, Object>> getAllOrderHistory();
     
     @Query(value = "SELECT o.id AS order_id, " +
                   "u.name AS customer_name, " +
                   "u.email AS customer_email, " +
+                  "r.name AS restaurant_name, " +
                   "o.total_amount, " +
                   "o.status, " +
                   "o.order_date, " +
@@ -35,6 +38,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
                   "o.delivery_address " +
                   "FROM orders o " +
                   "INNER JOIN users u ON o.customer_id = u.id " +
+                  "LEFT JOIN restaurants r ON o.restaurant_id = r.id " +
                   "WHERE u.id = :customerId " +
                   "ORDER BY o.order_date DESC", nativeQuery = true)
     List<Map<String, Object>> getOrderHistoryByCustomerId(@Param("customerId") Long customerId);

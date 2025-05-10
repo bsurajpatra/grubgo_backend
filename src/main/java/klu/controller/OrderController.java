@@ -10,11 +10,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import klu.model.Order;
+import klu.model.OrderStatus;
 import klu.model.User;
 import klu.repository.UserRepository;
 import klu.service.OrderService;
@@ -100,7 +102,7 @@ public class OrderController {
             // Return response
             Map<String, Object> response = new HashMap<>();
             response.put("order_id", order.getId());
-            response.put("status", order.getStatus());
+            response.put("status", order.getStatus().getDisplayName());
             response.put("message", "Order placed successfully");
             
             return ResponseEntity.ok(response);
@@ -140,6 +142,65 @@ public class OrderController {
         } catch (Exception e) {
             return ResponseEntity.status(500).body(Map.of(
                 "error", "Failed to retrieve order confirmation", 
+                "message", e.getMessage()
+            ));
+        }
+    }
+
+    @PutMapping("/{orderId}/status")
+    public ResponseEntity<?> updateOrderStatus(
+            @PathVariable Long orderId,
+            @RequestBody Map<String, String> request,
+            Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(401).body(Map.of("error", "Authentication required"));
+        }
+
+        try {
+            String newStatus = request.get("status");
+            OrderStatus status;
+            
+            try {
+                status = OrderStatus.valueOf(newStatus.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body(Map.of(
+                    "error", "Invalid status",
+                    "message", "Status must be one of: PLACED, PROCESSING, OUT_FOR_DELIVERY, DELIVERED, CANCELLED"
+                ));
+            }
+
+            Order updatedOrder = orderService.updateOrderStatus(orderId, status);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("order_id", updatedOrder.getId());
+            response.put("status", updatedOrder.getStatus().getDisplayName());
+            response.put("message", "Order status updated successfully");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                "error", "Failed to update order status",
+                "message", e.getMessage()
+            ));
+        }
+    }
+
+    @PostMapping("/{orderId}/cancel")
+    public ResponseEntity<?> cancelOrder(@PathVariable Long orderId) {
+        try {
+            Order cancelledOrder = orderService.cancelOrderPublic(orderId);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("order_id", cancelledOrder.getId());
+            response.put("status", cancelledOrder.getStatus().getDisplayName());
+            response.put("message", "Order cancelled successfully");
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(Map.of(
+                "error", "Failed to cancel order",
                 "message", e.getMessage()
             ));
         }

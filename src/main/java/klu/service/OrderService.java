@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import klu.model.Order;
 import klu.model.OrderItem;
+import klu.model.OrderStatus;
 import klu.model.Restaurant;
 import klu.repository.MenuItemRepository;
 import klu.repository.OrderItemRepository;
@@ -53,7 +54,7 @@ public class OrderService {
         order.setCustomerId(customerId);
         order.setRestaurantId(restaurantId);
         order.setTotalAmount(totalAmount);
-        order.setStatus("PLACED");
+        order.setStatus(OrderStatus.PLACED);
         order.setOrderDate(new Date());
         order.setDeliveryAddress(deliveryAddress);
         
@@ -95,12 +96,66 @@ public class OrderService {
         confirmation.put("order_id", order.getId());
         confirmation.put("restaurant_name", restaurantName);
         confirmation.put("total_amount", order.getTotalAmount());
-        confirmation.put("status", order.getStatus());
+        confirmation.put("status", order.getStatus().getDisplayName());
         confirmation.put("order_date", order.getOrderDate());
         confirmation.put("delivery_address", order.getDeliveryAddress());
         confirmation.put("items", orderItems);
         confirmation.put("estimated_delivery_time", "30-45 minutes"); // This could be calculated based on various factors
+        confirmation.put("can_be_cancelled", order.getStatus().canBeCancelled());
         
         return confirmation;
+    }
+
+    @Transactional
+    public Order updateOrderStatus(Long orderId, OrderStatus newStatus) {
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            throw new RuntimeException("Order not found");
+        }
+        
+        Order order = orderOpt.get();
+        order.setStatus(newStatus);
+        return orderRepository.save(order);
+    }
+
+    @Transactional
+    public Order cancelOrder(Long orderId, Long customerId) {
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            throw new RuntimeException("Order not found");
+        }
+        
+        Order order = orderOpt.get();
+        
+        // Verify the order belongs to the customer
+        if (!order.getCustomerId().equals(customerId)) {
+            throw new RuntimeException("Order does not belong to the customer");
+        }
+        
+        // Check if order can be cancelled
+        if (!order.getStatus().canBeCancelled()) {
+            throw new RuntimeException("Order cannot be cancelled in its current state");
+        }
+        
+        order.setStatus(OrderStatus.CANCELLED);
+        return orderRepository.save(order);
+    }
+    
+    @Transactional
+    public Order cancelOrderPublic(Long orderId) {
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            throw new RuntimeException("Order not found");
+        }
+        
+        Order order = orderOpt.get();
+        
+        // Check if order can be cancelled
+        if (!order.getStatus().canBeCancelled()) {
+            throw new RuntimeException("Order cannot be cancelled in its current state");
+        }
+        
+        order.setStatus(OrderStatus.CANCELLED);
+        return orderRepository.save(order);
     }
 }
