@@ -54,6 +54,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/dashboard/menu").permitAll()
                 .requestMatchers("/api/auth/**", "/api/password/forgot", "/api/password/reset").permitAll()
                 .requestMatchers("/api/restaurants/**").permitAll()
+                .requestMatchers("/api/orders/**").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
