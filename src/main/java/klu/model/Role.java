@@ -18,7 +18,6 @@ public class Role {
     @Enumerated(EnumType.STRING)
     private RoleName name;
 
-    // Getters and Setters
     public Long getId() {
         return id;
     }

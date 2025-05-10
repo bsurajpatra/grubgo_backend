@@ -29,7 +29,6 @@ public class DashboardController {
     public ResponseEntity<?> getDashboardMenu() {
         Map<String, Object> response = new HashMap<>();
         
-        // Log authentication information
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null) {
             logger.info("Auth principal: {}", auth.getPrincipal());
@@ -39,18 +38,15 @@ public class DashboardController {
             logger.warn("No authentication found in SecurityContext");
         }
         
-        // Get email from authentication
         String email = null;
         if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
             email = auth.getName();
         } else {
             logger.warn("User is not authenticated or is anonymous");
-            // Return default menu for unauthenticated users
             response.put("menuItems", new String[] {"Login", "Register"});
             return ResponseEntity.ok(response);
         }
         
-        // Find user by email
         User user = userRepository.findByEmail(email);
         if (user == null) {
             logger.warn("User not found for email: {}", email);
@@ -60,7 +56,6 @@ public class DashboardController {
         
         logger.info("Returning menu items for user with role: {}", user.getRole());
         
-        // Set user info in response
         response.put("userId", user.getId());
         response.put("name", user.getName());
         response.put("email", user.getEmail());

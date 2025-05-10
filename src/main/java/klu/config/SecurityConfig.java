@@ -1,4 +1,3 @@
-// src/main/java/klu/config/SecurityConfig.java
 package klu.config;
 
 import java.util.Arrays;

@@ -34,7 +34,6 @@ public class OrderController {
     @GetMapping
     public ResponseEntity<?> getOrderHistory() {
         try {
-            // Get all order
             List<Map<String, Object>> orderHistory = orderService.getAllOrderHistory();
             
             return ResponseEntity.ok(Map.of("orders", orderHistory));
@@ -54,7 +53,6 @@ public class OrderController {
         }
         
         try {
-            // Get user from authentication
             String email = authentication.getName();
             User user = userRepository.findByEmail(email);
             
@@ -62,12 +60,10 @@ public class OrderController {
                 return ResponseEntity.status(404).body(Map.of("error", "User not found"));
             }
             
-            // Extract order details from request
             Long restaurantId = Long.valueOf(orderRequest.get("restaurant_id").toString());
             @SuppressWarnings("unchecked")
             List<Map<String, Object>> items = (List<Map<String, Object>>) orderRequest.get("items");
             
-            // Validate that each item has the required fields including item_name
             for (Map<String, Object> item : items) {
                 if (!item.containsKey("menu_item_id") || 
                     !item.containsKey("quantity") || 
@@ -78,7 +74,6 @@ public class OrderController {
                     ));
                 }
                 
-                // Ensure item_name is present
                 if (!item.containsKey("item_name")) {
                     return ResponseEntity.badRequest().body(Map.of(
                         "error", "Invalid item data", 
@@ -90,7 +85,7 @@ public class OrderController {
             Double totalAmount = Double.valueOf(orderRequest.get("total_amount").toString());
             String deliveryAddress = (String) orderRequest.get("delivery_address");
             
-            // Create order
+            
             Order order = orderService.createOrder(
                 user.getId(), 
                 restaurantId, 
@@ -99,7 +94,6 @@ public class OrderController {
                 deliveryAddress
             );
             
-            // Return response
             Map<String, Object> response = new HashMap<>();
             response.put("order_id", order.getId());
             response.put("status", order.getStatus().getDisplayName());
@@ -122,7 +116,6 @@ public class OrderController {
         }
         
         try {
-            // Get user from authentication
             String email = authentication.getName();
             User user = userRepository.findByEmail(email);
             
@@ -130,7 +123,6 @@ public class OrderController {
                 return ResponseEntity.status(404).body(Map.of("error", "User not found"));
             }
             
-            // Get order confirmation
             Map<String, Object> confirmation = orderService.getOrderConfirmation(orderId, user.getId());
             
             if (confirmation == null) {

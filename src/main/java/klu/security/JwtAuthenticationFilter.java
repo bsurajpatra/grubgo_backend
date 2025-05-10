@@ -36,14 +36,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     String path = request.getRequestURI();
     logger.debug("Processing request: {}", path);
 
-    // Check for the specific path first that should skip JWT validation
     if (path.equals("/api/customer/order-history")) {
         logger.debug("Order history endpoint accessed, skipping JWT validation");
         filterChain.doFilter(request, response);
         return;
     }
     
-    // Check for public paths that don't require authentication
     if (path.startsWith("/api/auth/") || 
         path.startsWith("/api/password/") || 
         path.startsWith("/api/restaurants/") ||

@@ -21,7 +21,6 @@ public class User {
     private String address;
     private String role;
     
-    // Getters and setters
     public Long getId() {
         return id;
     }

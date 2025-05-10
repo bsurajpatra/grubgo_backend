@@ -1,19 +1,21 @@
 package klu.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import klu.model.Order;
-import klu.service.OrderService;
-import org.springframework.security.core.Authentication;
-import klu.repository.UserRepository;
-import klu.model.User;
-
-import java.util.List;
-import java.util.Map;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import klu.model.User;
+import klu.repository.UserRepository;
+import klu.service.OrderService;
 
 @RestController
 @RequestMapping("/api/customer")
@@ -48,11 +50,9 @@ public class CustomerController {
             
             return ResponseEntity.ok(orderHistory);
         } catch (Exception e) {
-            // Log the exception
             System.err.println("Error fetching order history: " + e.getMessage());
             e.printStackTrace();
             
-            // Return a meaningful error response
             return ResponseEntity.status(500).body(Map.of("error", "Failed to fetch order history", "message", e.getMessage()));
         }
     }

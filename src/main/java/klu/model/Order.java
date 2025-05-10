@@ -43,7 +43,7 @@ public class Order {
     @Column(name = "delivery_address")
     private String deliveryAddress;
 
-    // Getters and Setters
+    
     public Long getId() {
         return id;
     }

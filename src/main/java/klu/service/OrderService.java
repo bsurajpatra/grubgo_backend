@@ -49,7 +49,6 @@ public class OrderService {
     @Transactional
     public Order createOrder(Long customerId, Long restaurantId, List<Map<String, Object>> items, 
                             Double totalAmount, String deliveryAddress) {
-        // Create and save the order
         Order order = new Order();
         order.setCustomerId(customerId);
         order.setRestaurantId(restaurantId);
@@ -60,7 +59,6 @@ public class OrderService {
         
         Order savedOrder = orderRepository.save(order);
         
-        // Create and save order items
         for (Map<String, Object> item : items) {
             OrderItem orderItem = new OrderItem();
             orderItem.setOrderId(savedOrder.getId());
@@ -68,7 +66,6 @@ public class OrderService {
             orderItem.setQuantity(Integer.valueOf(item.get("quantity").toString()));
             orderItem.setItemPrice(new BigDecimal(item.get("item_price").toString()));
             
-            // Set item name if available
             if (item.containsKey("item_name")) {
                 orderItem.setItemName((String) item.get("item_name"));
             }
@@ -127,12 +124,10 @@ public class OrderService {
         
         Order order = orderOpt.get();
         
-        // Verify the order belongs to the customer
         if (!order.getCustomerId().equals(customerId)) {
             throw new RuntimeException("Order does not belong to the customer");
         }
         
-        // Check if order can be cancelled
         if (!order.getStatus().canBeCancelled()) {
             throw new RuntimeException("Order cannot be cancelled in its current state");
         }
@@ -150,7 +145,6 @@ public class OrderService {
         
         Order order = orderOpt.get();
         
-        // Check if order can be cancelled
         if (!order.getStatus().canBeCancelled()) {
             throw new RuntimeException("Order cannot be cancelled in its current state");
         }

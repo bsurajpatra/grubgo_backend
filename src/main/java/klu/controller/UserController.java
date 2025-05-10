@@ -57,7 +57,6 @@ public class UserController {
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody User user) {
         try {
-            // Use the service method which properly encodes passwords
             String result = userService.registerUser(user);
             String[] parts = result.split("::", 2);
             
@@ -83,17 +82,14 @@ public class UserController {
                 .body(Map.of("error", "User not authenticated"));
         }
         
-        // Get the email from the authentication object
         String email = authentication.getName();
         
-        // Find the user by email
         User user = userRepository.findByEmail(email);
         if (user == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of("error", "User not found"));
         }
         
-        // Create a response map without the password
         Map<String, Object> response = new HashMap<>();
         response.put("id", user.getId());
         response.put("name", user.getName());
@@ -120,7 +116,6 @@ public class UserController {
                 .body(Map.of("error", "User not found"));
         }
         
-        // Update only allowed fields (not email or password)
         existingUser.setName(updatedUser.getName());
         existingUser.setPhoneNumber(updatedUser.getPhoneNumber());
         existingUser.setAddress(updatedUser.getAddress());

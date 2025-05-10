@@ -31,7 +31,6 @@ public class OrderItem {
     @Column(name = "item_price", nullable = false)
     private BigDecimal itemPrice;
     
-    // Constructors
     public OrderItem() {
     }
     
@@ -43,7 +42,6 @@ public class OrderItem {
         this.itemPrice = itemPrice;
     }
     
-    // Getters and Setters
     public Long getId() {
         return id;
     }

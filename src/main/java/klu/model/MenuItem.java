@@ -1,14 +1,14 @@
 package klu.model;
 
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-
-import java.math.BigDecimal;
 
 @Entity
 @Table(name = "menu_items")
@@ -34,7 +34,6 @@ public class MenuItem {
     
     private Boolean availability = true;
 
-    // Getters and setters
     public Long getItemId() {
         return itemId;
     }
