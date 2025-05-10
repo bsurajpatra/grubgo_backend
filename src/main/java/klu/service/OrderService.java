@@ -46,6 +46,14 @@ public class OrderService {
         return orderRepository.getAllOrderHistory();
     }
     
+    public Optional<Order> getOrderById(Long orderId) {
+        return orderRepository.findById(orderId);
+    }
+    
+    public List<Map<String, Object>> getOrderItemDetails(Long orderId) {
+        return orderItemRepository.getOrderItemsWithDetails(orderId);
+    }
+    
     @Transactional
     public Order createOrder(Long customerId, Long restaurantId, List<Map<String, Object>> items, 
                             Double totalAmount, String deliveryAddress) {

@@ -2,6 +2,9 @@ package klu.model;
 
 public enum OrderStatus {
     PLACED("Order Placed"),
+    PENDING("Pending"),
+    PREPARING("Preparing"),
+    READY("Ready for Pickup"),
     PROCESSING("Processing"),
     OUT_FOR_DELIVERY("Out for Delivery"),
     DELIVERED("Delivered"),
@@ -18,6 +21,6 @@ public enum OrderStatus {
     }
 
     public boolean canBeCancelled() {
-        return this == PLACED || this == PROCESSING;
+        return this == PLACED || this == PENDING || this == PREPARING || this == PROCESSING;
     }
 } 

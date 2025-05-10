@@ -70,9 +70,8 @@ public class DashboardController {
                 break;
             case "RESTAURANT_OWNER":
                 response.put("menuItems", new String[] {
-                    "View Recent Orders", 
+                    "View Orders", 
                     "Update Menu", 
-                    "Order History", 
                     "Profile"
                 });
                 break;

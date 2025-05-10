@@ -42,4 +42,19 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
                   "WHERE u.id = :customerId " +
                   "ORDER BY o.order_date DESC", nativeQuery = true)
     List<Map<String, Object>> getOrderHistoryByCustomerId(@Param("customerId") Long customerId);
+    
+    @Query(value = "SELECT o.id AS order_id, " +
+                  "u.name AS customer_name, " +
+                  "u.email AS customer_email, " +
+                  "u.phone_number AS customer_phone, " +
+                  "o.total_amount, " +
+                  "o.status, " +
+                  "o.order_date AS created_at, " +
+                  "o.delivery_address, " +
+                  "o.item_name AS special_instructions " +
+                  "FROM orders o " +
+                  "INNER JOIN users u ON o.customer_id = u.id " +
+                  "WHERE o.restaurant_id = :restaurantId " +
+                  "ORDER BY o.order_date DESC", nativeQuery = true)
+    List<Map<String, Object>> getOrdersByRestaurantId(@Param("restaurantId") Long restaurantId);
 }
