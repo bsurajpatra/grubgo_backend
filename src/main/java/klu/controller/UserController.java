@@ -8,8 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -20,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import klu.model.User;
 import klu.repository.UserRepository;
 import klu.service.UserService;
-import klu.util.JwtUtil;
 
 @RestController
 @RequestMapping("/api/user")
@@ -33,9 +30,6 @@ public class UserController {
     private AuthenticationManager authenticationManager;
     
     @Autowired
-    private JwtUtil jwtUtil;
-    
-    @Autowired
     private UserService userService;
 
     @PostMapping("/login")
@@ -45,11 +39,15 @@ public class UserController {
         
         Map<String, Object> responseMap = new HashMap<>();
         if (parts[0].equals("200")) {
-            responseMap.put("token", parts[1]);
-            responseMap.put("role", userRepository.findByEmail(user.getEmail()).getRole());
+            User authenticatedUser = userRepository.findByEmail(user.getEmail());
+            responseMap.put("success", true);
+            responseMap.put("role", authenticatedUser.getRole());
             responseMap.put("email", user.getEmail());
+            responseMap.put("name", authenticatedUser.getName());
+            responseMap.put("userId", authenticatedUser.getId());
             return ResponseEntity.ok(responseMap);
         } else {
+            responseMap.put("success", false);
             responseMap.put("error", parts[1]);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseMap);
         }
@@ -75,15 +73,13 @@ public class UserController {
         }
     }
 
-    @GetMapping("/profile")
-    public ResponseEntity<?> getUserProfile(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated() || 
-            authentication.getName().equals("anonymousUser")) {
+    @PostMapping("/profile")
+    public ResponseEntity<?> getUserProfile(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        if (email == null || email.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "User not authenticated"));
+                .body(Map.of("error", "Email not provided"));
         }
-        
-        String email = authentication.getName();
         
         User user = userRepository.findByEmail(email);
         if (user == null) {
@@ -103,13 +99,13 @@ public class UserController {
     }
     
     @PutMapping("/profile")
-    public ResponseEntity<?> updateUserProfile(@RequestBody User updatedUser, Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
+    public ResponseEntity<?> updateUserProfile(@RequestBody Map<String, Object> requestData) {
+        String email = (String) requestData.get("email");
+        if (email == null || email.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "User not authenticated"));
+                .body(Map.of("error", "Email not provided"));
         }
         
-        String email = authentication.getName();
         User existingUser = userRepository.findByEmail(email);
         
         if (existingUser == null) {
@@ -117,9 +113,17 @@ public class UserController {
                 .body(Map.of("error", "User not found"));
         }
         
-        existingUser.setName(updatedUser.getName());
-        existingUser.setPhoneNumber(updatedUser.getPhoneNumber());
-        existingUser.setAddress(updatedUser.getAddress());
+        if (requestData.containsKey("name")) {
+            existingUser.setName((String) requestData.get("name"));
+        }
+        
+        if (requestData.containsKey("phoneNumber")) {
+            existingUser.setPhoneNumber((String) requestData.get("phoneNumber"));
+        }
+        
+        if (requestData.containsKey("address")) {
+            existingUser.setAddress((String) requestData.get("address"));
+        }
         
         userRepository.save(existingUser);
         
@@ -127,20 +131,14 @@ public class UserController {
     }
     
     @PostMapping("/change-password")
-    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> passwordData, 
-                                          Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "User not authenticated"));
-        }
-        
-        String email = authentication.getName();
+    public ResponseEntity<?> changePassword(@RequestBody Map<String, String> passwordData) {
+        String email = passwordData.get("email");
         String currentPassword = passwordData.get("currentPassword");
         String newPassword = passwordData.get("newPassword");
         
-        if (currentPassword == null || newPassword == null) {
+        if (email == null || currentPassword == null || newPassword == null) {
             return ResponseEntity.badRequest()
-                .body(Map.of("error", "Current password and new password are required"));
+                .body(Map.of("error", "Email, current password and new password are required"));
         }
         
         try {
@@ -157,14 +155,13 @@ public class UserController {
         }
     }
     
-    @DeleteMapping("/account")
-    public ResponseEntity<?> deleteAccount(Authentication authentication) {
-        if (authentication == null || !authentication.isAuthenticated()) {
+    @PostMapping("/delete-account")
+    public ResponseEntity<?> deleteAccount(@RequestBody Map<String, String> request) {
+        String email = request.get("email");
+        if (email == null || email.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("error", "User not authenticated"));
+                .body(Map.of("error", "Email not provided"));
         }
-        
-        String email = authentication.getName();
         
         try {
             boolean success = userService.deleteUserAccount(email);

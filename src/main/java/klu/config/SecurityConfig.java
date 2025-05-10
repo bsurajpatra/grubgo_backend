@@ -17,14 +17,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import jakarta.servlet.http.HttpServletResponse;
 import klu.security.CustomUserDetailsService;
-import klu.security.JwtAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -36,9 +34,6 @@ public class SecurityConfig {
     @Autowired
     private CustomUserDetailsService userDetailsService;
     
-    @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
-    
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         logger.info("Configuring security filter chain");
@@ -47,21 +42,11 @@ public class SecurityConfig {
             .cors(corsConfig -> corsConfig.configurationSource(corsConfigurationSource()))
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/customer/order-history").permitAll()
-                .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
-                .requestMatchers("/api/user/login", "/api/user/register").permitAll()
-                .requestMatchers("/api/dashboard/menu").permitAll()
-                .requestMatchers("/api/auth/**", "/api/password/forgot", "/api/password/reset").permitAll()
-                .requestMatchers("/api/restaurants/**").permitAll()
-                .requestMatchers("/api/orders/**").permitAll()
-                .requestMatchers("/api/admin/users").permitAll()
-                .requestMatchers("/api/admin/restaurant-owners").permitAll()
-                .requestMatchers("/api/admin/community-presidents").permitAll()
-                .anyRequest().authenticated()
+                // Permit all requests to all endpoints
+                .anyRequest().permitAll()
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .exceptionHandling(ex -> 
                 ex.authenticationEntryPoint((request, response, authException) -> {
                     logger.error("Unauthorized error: {}", authException.getMessage());
@@ -78,9 +63,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173"));
+        // Use specific origins instead of wildcards
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
         

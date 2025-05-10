@@ -7,7 +7,6 @@ import klu.model.User;
 import klu.repository.RoleRepository;
 import klu.repository.UserRepository;
 import klu.util.EmailManager;
-import klu.util.JwtUtil;
 
 @Service
 public class UserService {
@@ -19,9 +18,6 @@ public class UserService {
 
     @Autowired
     private EmailManager emailManager;
-
-    @Autowired
-    private JwtUtil jwtUtil;
     
     @Autowired
     private WelcomeEmailService welcomeEmailService;
@@ -51,9 +47,7 @@ public class UserService {
         
         // Plain text comparison for testing
         if (password.equals(user.getPassword())) {
-            String token = jwtUtil.generateToken(email, user.getRole());
-            System.out.println("Generated token: " + token);
-            return "200::" + token;
+            return "200::Authentication successful";
         }
         
         return "404::Invalid Credentials";
