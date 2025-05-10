@@ -598,4 +598,198 @@ public class RestaurantController {
             ));
         }
     }
+
+    @GetMapping("/menu-by-email")
+    public ResponseEntity<?> getMenuByEmail(@RequestParam String email) {
+        logger.info("Getting menu items for restaurant owner with email: {}", email);
+        
+        try {
+            // Find user by email
+            User user = userRepository.findByEmail(email);
+            if (user == null) {
+                logger.error("User not found for email: {}", email);
+                return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
+            }
+            
+            // Find restaurant by owner ID
+            Optional<Restaurant> restaurantOpt = restaurantRepository.findByOwnerId(user.getId());
+            if (restaurantOpt.isEmpty()) {
+                logger.error("No restaurant found for owner with ID: {}", user.getId());
+                return ResponseEntity.badRequest().body(Map.of("error", "No restaurant found for this owner"));
+            }
+            
+            Restaurant restaurant = restaurantOpt.get();
+            logger.info("Found restaurant: {} (ID: {})", restaurant.getName(), restaurant.getId());
+            
+            // Get menu items for this restaurant
+            List<MenuItem> menuItems = menuItemRepository.findByRestaurantId(restaurant.getId());
+            logger.info("Found {} menu items for restaurant", menuItems.size());
+            
+            return ResponseEntity.ok(Map.of(
+                "restaurant", Map.of(
+                    "id", restaurant.getId(),
+                    "name", restaurant.getName()
+                ),
+                "menuItems", menuItems
+            ));
+        } catch (Exception e) {
+            logger.error("Error getting menu items", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to get menu items", "message", e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/menu-items")
+    public ResponseEntity<?> createMenuItem(@RequestParam String email, @RequestBody MenuItem menuItem) {
+        logger.info("Creating menu item for restaurant owner with email: {}", email);
+        
+        try {
+            // Find user by email
+            User user = userRepository.findByEmail(email);
+            if (user == null) {
+                logger.error("User not found for email: {}", email);
+                return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
+            }
+            
+            // Find restaurant by owner ID
+            Optional<Restaurant> restaurantOpt = restaurantRepository.findByOwnerId(user.getId());
+            if (restaurantOpt.isEmpty()) {
+                logger.error("No restaurant found for owner with ID: {}", user.getId());
+                return ResponseEntity.badRequest().body(Map.of("error", "No restaurant found for this owner"));
+            }
+            
+            Restaurant restaurant = restaurantOpt.get();
+            logger.info("Found restaurant: {} (ID: {})", restaurant.getName(), restaurant.getId());
+            
+            // Set restaurant ID for the menu item
+            menuItem.setRestaurantId(restaurant.getId());
+            
+            // Default availability to true if not specified
+            if (menuItem.getAvailability() == null) {
+                menuItem.setAvailability(true);
+            }
+            
+            // Save the menu item
+            MenuItem savedMenuItem = menuItemRepository.save(menuItem);
+            logger.info("Created menu item: {} (ID: {})", savedMenuItem.getName(), savedMenuItem.getItemId());
+            
+            return ResponseEntity.ok(savedMenuItem);
+        } catch (Exception e) {
+            logger.error("Error creating menu item", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to create menu item", "message", e.getMessage()));
+        }
+    }
+    
+    @PatchMapping("/menu-items/{itemId}")
+    public ResponseEntity<?> updateMenuItem(@RequestParam String email, @PathVariable Long itemId, @RequestBody MenuItem menuItemUpdate) {
+        logger.info("Updating menu item {} for restaurant owner with email: {}", itemId, email);
+        
+        try {
+            // Find user by email
+            User user = userRepository.findByEmail(email);
+            if (user == null) {
+                logger.error("User not found for email: {}", email);
+                return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
+            }
+            
+            // Find restaurant by owner ID
+            Optional<Restaurant> restaurantOpt = restaurantRepository.findByOwnerId(user.getId());
+            if (restaurantOpt.isEmpty()) {
+                logger.error("No restaurant found for owner with ID: {}", user.getId());
+                return ResponseEntity.badRequest().body(Map.of("error", "No restaurant found for this owner"));
+            }
+            
+            Restaurant restaurant = restaurantOpt.get();
+            
+            // Find the menu item
+            Optional<MenuItem> menuItemOpt = menuItemRepository.findById(itemId);
+            if (menuItemOpt.isEmpty()) {
+                logger.error("Menu item not found with ID: {}", itemId);
+                return ResponseEntity.notFound().build();
+            }
+            
+            MenuItem existingMenuItem = menuItemOpt.get();
+            
+            // Verify this menu item belongs to the restaurant
+            if (!existingMenuItem.getRestaurantId().equals(restaurant.getId())) {
+                logger.error("Menu item {} does not belong to restaurant {}", itemId, restaurant.getId());
+                return ResponseEntity.status(403).body(Map.of("error", "Not authorized to update this menu item"));
+            }
+            
+            // Update fields if provided
+            if (menuItemUpdate.getName() != null) {
+                existingMenuItem.setName(menuItemUpdate.getName());
+            }
+            if (menuItemUpdate.getDescription() != null) {
+                existingMenuItem.setDescription(menuItemUpdate.getDescription());
+            }
+            if (menuItemUpdate.getPrice() != null) {
+                existingMenuItem.setPrice(menuItemUpdate.getPrice());
+            }
+            if (menuItemUpdate.getCategory() != null) {
+                existingMenuItem.setCategory(menuItemUpdate.getCategory());
+            }
+            if (menuItemUpdate.getImageUrl() != null) {
+                existingMenuItem.setImageUrl(menuItemUpdate.getImageUrl());
+            }
+            if (menuItemUpdate.getAvailability() != null) {
+                existingMenuItem.setAvailability(menuItemUpdate.getAvailability());
+            }
+            
+            // Save the updated menu item
+            MenuItem updatedMenuItem = menuItemRepository.save(existingMenuItem);
+            logger.info("Updated menu item: {} (ID: {})", updatedMenuItem.getName(), updatedMenuItem.getItemId());
+            
+            return ResponseEntity.ok(updatedMenuItem);
+        } catch (Exception e) {
+            logger.error("Error updating menu item", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to update menu item", "message", e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/menu-items/{itemId}/delete")
+    public ResponseEntity<?> deleteMenuItem(@RequestParam String email, @PathVariable Long itemId) {
+        logger.info("Deleting menu item {} for restaurant owner with email: {}", itemId, email);
+        
+        try {
+            // Find user by email
+            User user = userRepository.findByEmail(email);
+            if (user == null) {
+                logger.error("User not found for email: {}", email);
+                return ResponseEntity.badRequest().body(Map.of("error", "User not found"));
+            }
+            
+            // Find restaurant by owner ID
+            Optional<Restaurant> restaurantOpt = restaurantRepository.findByOwnerId(user.getId());
+            if (restaurantOpt.isEmpty()) {
+                logger.error("No restaurant found for owner with ID: {}", user.getId());
+                return ResponseEntity.badRequest().body(Map.of("error", "No restaurant found for this owner"));
+            }
+            
+            Restaurant restaurant = restaurantOpt.get();
+            
+            // Find the menu item
+            Optional<MenuItem> menuItemOpt = menuItemRepository.findById(itemId);
+            if (menuItemOpt.isEmpty()) {
+                logger.error("Menu item not found with ID: {}", itemId);
+                return ResponseEntity.notFound().build();
+            }
+            
+            MenuItem menuItem = menuItemOpt.get();
+            
+            // Verify this menu item belongs to the restaurant
+            if (!menuItem.getRestaurantId().equals(restaurant.getId())) {
+                logger.error("Menu item {} does not belong to restaurant {}", itemId, restaurant.getId());
+                return ResponseEntity.status(403).body(Map.of("error", "Not authorized to delete this menu item"));
+            }
+            
+            // Delete the menu item
+            menuItemRepository.deleteById(itemId);
+            logger.info("Deleted menu item with ID: {}", itemId);
+            
+            return ResponseEntity.ok(Map.of("message", "Menu item deleted successfully"));
+        } catch (Exception e) {
+            logger.error("Error deleting menu item", e);
+            return ResponseEntity.internalServerError().body(Map.of("error", "Failed to delete menu item", "message", e.getMessage()));
+        }
+    }
 }
