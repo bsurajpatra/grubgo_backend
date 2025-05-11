@@ -16,7 +16,7 @@ import klu.service.PasswordService;
 
 @RestController
 @RequestMapping("/api/password")
-@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173"}, allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173", "https://grubgo-rosy.vercel.app"}, allowCredentials = "true")
 public class PasswordController {
 
     @Autowired

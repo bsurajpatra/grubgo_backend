@@ -21,7 +21,7 @@ import klu.service.UserService;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173", allowCredentials = "true")
+@CrossOrigin(origins = {"http://localhost:5173", "http://localhost:3000", "https://grubgo-rosy.vercel.app"}, allowCredentials = "true")
 public class AuthController {
     @Autowired
     private UserService userService;
